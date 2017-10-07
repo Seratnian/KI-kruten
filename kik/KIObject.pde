@@ -1,7 +1,13 @@
 class KIObject extends MoveableObject implements SeeingObject
 {
-  Strategy strategy;
+  final static int ENERGY_START = 200;
+  final static int ENERGY_SHOOT = 10;
+  final static int ENERGY_LOOK = 1;
+  final static int ENERGY_REG = 10;
   
+  int energy = ENERGY_START;
+  int lastTimeRegenerated;
+  Strategy strategy;
   int preferredRotatedirection = randomSign();
   
   KIObject(PVector position, float scale, PVector rotations, PShape structure, float size, color plainColor, Strategy strategy)
@@ -19,8 +25,11 @@ class KIObject extends MoveableObject implements SeeingObject
   
   void performLook(PVector direction, HashMap<PVector, Visual> out)
   {
+    if (energy < ENERGY_LOOK)
+      return;
+    energy -= ENERGY_LOOK;
     Ray ray = new Ray(getActionPosition(), direction);
-    rays.add(ray);
+    //rays.add(ray);
     ray.cast(out);
   }
   
@@ -79,9 +88,20 @@ class KIObject extends MoveableObject implements SeeingObject
     
     return performLooks(directions);
   }
+  
+  boolean update()
+  {
+    if (lastTimeRegenerated != second())
+    {
+      energy = Math.min(ENERGY_START, energy + ENERGY_REG);
+      lastTimeRegenerated = second();
+    }
+    
+    return super.update();
+  }
 }
 
 public enum Strategy
 {
-  DO_NOTHING, ALWAYS_MOVE_AND_SHOOT, LOOK_FOR_OPPONENTS
+  DO_NOTHING, ALWAYS_MOVE_AND_SHOOT, LOOK_FOR_OPPONENTS, NEURAL_NETWORK
 }
