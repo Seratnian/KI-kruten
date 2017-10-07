@@ -3,6 +3,7 @@ class Network
   HashMap<NeuronName, Neuron> inputNeurons = new HashMap();
   HashMap<NeuronName, Neuron> hiddenNeurons = new HashMap();
   HashMap<NeuronName, Neuron> outputNeurons = new HashMap();
+  HashMap[] neurons = { inputNeurons, hiddenNeurons, outputNeurons };
   
   public float getOutput(NeuronName name)
   {
@@ -16,17 +17,12 @@ class Network
   
   public void resolve()
   {
-    for (Neuron inputNeuron : inputNeurons.values())
+    for (HashMap<NeuronName, Neuron> neuronMap : neurons)
     {
-      inputNeuron.resolve();
-    }
-    for (Neuron hiddenNeuron : hiddenNeurons.values())
-    {
-      hiddenNeuron.resolve();
-    }
-    for (Neuron outputNeuron : outputNeurons.values())
-    {
-      outputNeuron.resolve();
+      for (Neuron inputNeuron : neuronMap.values())
+      {
+        inputNeuron.resolve();
+      }
     }
   }
   
@@ -36,7 +32,8 @@ class Network
     switch (prototype)
     {
       default:
-      case FLYING_ROBOT_STRATEGY:
+      case RANDOM:
+      case DEFAULT:
         inputNeuronNames = new NeuronName[] { NeuronName.HAPTIC, NeuronName.VISUAL_TYPE, NeuronName.VISUAL_POSITION, NeuronName.WEAPON, NeuronName.ENERGY };
         hiddenNeuronNames = new NeuronName[] { NeuronName.HIDDEN_01, NeuronName.HIDDEN_02, NeuronName.HIDDEN_03, NeuronName.HIDDEN_04, NeuronName.HIDDEN_05 };
         outputNeuronNames = new NeuronName[] { NeuronName.MOVE, NeuronName.ROTATE, NeuronName.ADJUST, NeuronName.LOOK, NeuronName.SHOOT };
@@ -78,12 +75,34 @@ class Network
         outputNeuron.inputLinks.add(link);
       }
     }
+    if (prototype == NetworkPrototype.RANDOM)
+    {
+      float thresholdDifference = Neuron.MAX_THRESHOLD - Neuron.MIN_THRESHOLD;
+      float thresholdDifferenceHalf = thresholdDifference / 2;
+      float weightDifference = Link.MAX_WEIGHT - Link.MIN_WEIGHT;
+      float weightDifferenceHalf = weightDifference / 2;
+      for (HashMap<NeuronName, Neuron> neuronMap : neurons)
+      {
+        for (Neuron neuron : neuronMap.values())
+        {
+          neuron.threshold = (float) (Math.random() * thresholdDifference - thresholdDifferenceHalf);
+          for (Link link : neuron.inputLinks)
+          {
+            link.weight = (float) (Math.random() * weightDifference - weightDifferenceHalf);
+          }
+        }
+      }
+    }
   }
 }
 
 class Neuron
 {
-  final static float DEFAULT_THRESHOLD = .5f;
+  final static float DEFAULT_THRESHOLD = .0f;
+  final static float MIN_THRESHOLD = 0;
+  final static float MAX_THRESHOLD = 1;
+  final static float MIN_SOLUTION = 0;
+  final static float MAX_SOLUTION = 1;
   
   NeuronName name;
   float threshold = DEFAULT_THRESHOLD;
@@ -115,23 +134,26 @@ class Neuron
     float impulses = -DEFAULT_THRESHOLD;
     for (Link link : inputLinks)
     {
-      message ("input for " + name.name() + ": " + link.getImpulse());
+      //message ("input for " + name.name() + ": " + link.getImpulse());
       impulses += link.getImpulse();
     }
     
-    // clip the solution at -1 and 1
-    float solution = Math.max(-1, Math.min(1, impulses));
+    // clip the solution at 0 and 1
+    float solution = Math.max(0, Math.min(1, impulses));
     for (Link link : outputLinks)
     {
       link.impulse = solution;
     }
-    message ("solution for " + name.name() + ": " + solution);
+    //message ("solution for " + name.name() + ": " + solution);
   }
 }
 
 class Link
 {
   final static float DEFAULT_WEIGHT = 1f;
+  final static float MIN_WEIGHT = -1;
+  final static float MAX_WEIGHT = 1;
+  
   float weight;
   float impulse = 0;
 
@@ -148,7 +170,7 @@ class Link
 
 enum NetworkPrototype
 {
-  FLYING_ROBOT_STRATEGY
+  DEFAULT, RANDOM
 }
 enum Layer
 {

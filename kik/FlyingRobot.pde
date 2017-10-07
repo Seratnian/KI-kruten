@@ -5,6 +5,7 @@ class FlyingRobot extends KIObject implements ShootingObject
   final static float SHOOTING_ANGLE_DEFAULT = -PI/8;
   final static float SHOOTING_ANGLE_PLAYER = -PI/16;
   final static float SHOOTING_ANGLE_ROBOT = -PI/2;
+  final static float LOOK_DIRECTION_RANGE = .2f;
   float shootingAngle = SHOOTING_ANGLE_DEFAULT;
   private PVector lastEnemySpottedPosition;
   private Visual lastEnemySpottedType = Visual.WALL;
@@ -78,6 +79,18 @@ class FlyingRobot extends KIObject implements ShootingObject
     shootingAngle = (shootingAngle + targetedShootingAngle) / 2;
   }
   
+  void saveEnemySpotting(Visual type, PVector position)
+  {
+    lastEnemySpottedPosition = position.copy();
+    lastEnemySpottedType = type;
+    lastEnemySpottedTime = millis();
+  }
+  
+  float shiftToPossibleNegativity(float value)
+  {
+    return value * 2 - 1;
+  }
+  
   boolean update()
   {
     // here comes the logic of the KI
@@ -96,18 +109,44 @@ class FlyingRobot extends KIObject implements ShootingObject
         if (checkMove(getPosition(), getPlainDirection()))
         {
           movePlain(getMoveDirectionPlain().mult(network.getOutput(NeuronName.MOVE)));
-          message("position: " + getPosition());
         }
         // rotate
-        rotatePlain(maxAnglePerSecond / frameRate * network.getOutput(NeuronName.ROTATE));
+        rotatePlain(maxAnglePerSecond / frameRate * shiftToPossibleNegativity(network.getOutput(NeuronName.ROTATE)));
         // adjust weapon
-        shootingAngle += SHOOTING_ANGLE_DEFAULT * network.getOutput(NeuronName.ADJUST);
+        shootingAngle += SHOOTING_ANGLE_DEFAULT * shiftToPossibleNegativity(network.getOutput(NeuronName.ADJUST));
+        // look
+        float lookOutput = shiftToPossibleNegativity(network.getOutput(NeuronName.LOOK));
+        if (lookOutput > 0)
+        {
+          LookDirection lookDirection = LookDirection.FORWARD;
+          if (lookOutput > LOOK_DIRECTION_RANGE * 4)
+            lookDirection = LookDirection.FORWARD_22_45_67_90;
+            else if (lookOutput > LOOK_DIRECTION_RANGE * 3)
+              lookDirection = LookDirection.FORWARD_22_45_90;
+              else if (lookOutput > LOOK_DIRECTION_RANGE * 2)
+                lookDirection = LookDirection.FORWARD_22_45;
+                else if (lookOutput > LOOK_DIRECTION_RANGE)
+                  lookDirection = LookDirection.FORWARD_45;
+          HashMap<PVector, Visual> visuals = performLooks(get3dDirection().add(0, shootingAngle, 0), lookDirection);
+          
+          for (PVector enemyPosition : visuals.keySet())
+          {
+            if (visuals.get(enemyPosition) != Visual.WALL)
+            {
+              saveEnemySpotting(visuals.get(enemyPosition), enemyPosition);
+            }
+          }
+        }
+        // shoot
+        if (network.getOutput(NeuronName.SHOOT) > .5f)
+        {
+          shoot();
+        }
         
         // set inputs
         // set whether the room before the robot is free
         network.setInput(NeuronName.HAPTIC,
           checkMove(getPosition(), getPlainDirection()) ? 1 : 0);
-        // TODO: move to according action
         // set the result of the raycasting: the enemy's type
         network.setInput(NeuronName.VISUAL_TYPE,
           lastEnemySpottedType == Visual.PLAYER ? -1 / getEnemyTimeFactor() :
@@ -129,9 +168,7 @@ class FlyingRobot extends KIObject implements ShootingObject
             if (visuals.get(enemyPosition) != Visual.WALL)
             {
               // remember the spotting
-              lastEnemySpottedPosition = enemyPosition.copy();
-              lastEnemySpottedType = visuals.get(enemyPosition);
-              lastEnemySpottedTime = millis();
+              saveEnemySpotting(visuals.get(enemyPosition), enemyPosition);
               // if the last enemy spotting happened recently, use it
               if (millis() - lastEnemySpottedTime < 1000)
                 enemyPosition.mult(2).add(lastEnemySpottedPosition).div(3);

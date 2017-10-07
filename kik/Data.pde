@@ -98,7 +98,7 @@ class Data
     //enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, Strategy.LOOK_FOR_OPPONENTS));
     //enemies.add(new FlyingRobot(startPositions.get(3), new PVector(0, random(-PI, PI), 0), #666699, Strategy.LOOK_FOR_OPPONENTS));
     
-    enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, new Network(NetworkPrototype.FLYING_ROBOT_STRATEGY)));
+    enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, new Network(NetworkPrototype.RANDOM)));
     
     // set player's start position
     PVector position = player.getPosition();
