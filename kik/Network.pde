@@ -37,7 +37,7 @@ class Network
     {
       default:
       case FLYING_ROBOT_STRATEGY:
-        inputNeuronNames = new NeuronName[] { NeuronName.HAPTIC, NeuronName.VISUAL, NeuronName.WEAPON, NeuronName.ENERGY };
+        inputNeuronNames = new NeuronName[] { NeuronName.HAPTIC, NeuronName.VISUAL_TYPE, NeuronName.VISUAL_POSITION, NeuronName.WEAPON, NeuronName.ENERGY };
         hiddenNeuronNames = new NeuronName[] { NeuronName.HIDDEN_01, NeuronName.HIDDEN_02, NeuronName.HIDDEN_03, NeuronName.HIDDEN_04, NeuronName.HIDDEN_05 };
         outputNeuronNames = new NeuronName[] { NeuronName.MOVE, NeuronName.ROTATE, NeuronName.ADJUST, NeuronName.LOOK, NeuronName.SHOOT };
     }
@@ -101,7 +101,8 @@ class Neuron
       case INPUT:
         inputLinks.add(link);
         if (name == NeuronName.STATIC)
-          link.impulse = 1;
+          // the static neuron always produces an output of 0.5
+          link.impulse = DEFAULT_THRESHOLD / Link.DEFAULT_WEIGHT + .5;
         break;
       case OUTPUT:
         outputLinks.add(link);
@@ -114,22 +115,23 @@ class Neuron
     float impulses = -DEFAULT_THRESHOLD;
     for (Link link : inputLinks)
     {
-      //message ("input for " + name.name() + ": " + link.getImpulse());
+      message ("input for " + name.name() + ": " + link.getImpulse());
       impulses += link.getImpulse();
     }
     
-    float solution = Math.max(0, Math.signum(impulses));
+    // clip the solution at -1 and 1
+    float solution = Math.max(-1, Math.min(1, impulses));
     for (Link link : outputLinks)
     {
       link.impulse = solution;
     }
-    //message ("solution for " + name.name() + ": " + solution);
+    message ("solution for " + name.name() + ": " + solution);
   }
 }
 
 class Link
 {
-  final static float DEFAULT_WEIGHT = 1.0f;
+  final static float DEFAULT_WEIGHT = 1f;
   float weight;
   float impulse = 0;
 
@@ -154,5 +156,5 @@ enum Layer
 }
 enum NeuronName
 {
-  HAPTIC, VISUAL, WEAPON, ENERGY, STATIC, HIDDEN_01, HIDDEN_02, HIDDEN_03, HIDDEN_04, HIDDEN_05, MOVE, ROTATE, ADJUST, LOOK, SHOOT
+  HAPTIC, VISUAL_TYPE, VISUAL_POSITION, WEAPON, ENERGY, STATIC, HIDDEN_01, HIDDEN_02, HIDDEN_03, HIDDEN_04, HIDDEN_05, MOVE, ROTATE, ADJUST, LOOK, SHOOT
 }

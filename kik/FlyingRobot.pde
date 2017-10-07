@@ -7,7 +7,7 @@ class FlyingRobot extends KIObject implements ShootingObject
   final static float SHOOTING_ANGLE_ROBOT = -PI/2;
   float shootingAngle = SHOOTING_ANGLE_DEFAULT;
   private PVector lastEnemySpottedPosition;
-  private Visual lastEnemySpottedType;
+  private Visual lastEnemySpottedType = Visual.WALL;
   private float lastEnemySpottedTime;
   private Network network;
   
@@ -26,6 +26,11 @@ class FlyingRobot extends KIObject implements ShootingObject
     this.network = network;
   }
   
+  private float getEnemyTimeFactor()
+  {
+    return 100 / (millis() - lastEnemySpottedTime);
+  }
+  
   // shoots
   void performShot()
   {
@@ -42,13 +47,20 @@ class FlyingRobot extends KIObject implements ShootingObject
     return getActionPosition();
   }
   
+  float scalarProduct(PVector a, PVector b)
+  {
+    return Math.min(1, Math.max(-1, a.x * b.z - a.y * b.x));
+  }
+  
+  float scalarProductFromPosition(PVector otherVector)
+  {
+    return scalarProduct(otherVector.sub(getPosition()).normalize(), getPlainDirection().copy().normalize());
+  }
+  
   void rotateTowardsEnemy(PVector enemyPosition)
   {
       // determine the direction of the rotation
-      PVector toEnemy = enemyPosition.sub(getPosition()).normalize();
-      PVector toFront = getPlainDirection().copy().normalize();
-      
-      float rotationDirection = - Math.min(1, Math.max(-1, toFront.x * toEnemy.z - toFront.y * toEnemy.x));
+      float rotationDirection = - scalarProductFromPosition(enemyPosition);
       //message("Found an enemy. Rotating " + (rotationDirection > 0 ? "right" : "left"));
       // apply rotation
       rotatePlain(maxAnglePerSecond / frameRate * rotationDirection);
@@ -80,14 +92,32 @@ class FlyingRobot extends KIObject implements ShootingObject
         network.resolve();
         
         // check the outputs
-        if (network.getOutput(NeuronName.MOVE) > 0 && checkMove(getPosition(), getPlainDirection()))
+        // move
+        if (checkMove(getPosition(), getPlainDirection()))
         {
-          movePlain(getMoveDirectionPlain());
+          movePlain(getMoveDirectionPlain().mult(network.getOutput(NeuronName.MOVE)));
           message("position: " + getPosition());
         }
+        // rotate
+        rotatePlain(maxAnglePerSecond / frameRate * network.getOutput(NeuronName.ROTATE));
+        // adjust weapon
+        shootingAngle += SHOOTING_ANGLE_DEFAULT * network.getOutput(NeuronName.ADJUST);
         
         // set inputs
-        network.setInput(NeuronName.HAPTIC, checkMove(getPosition(), getPlainDirection()) ? 1 : 0);
+        // set whether the room before the robot is free
+        network.setInput(NeuronName.HAPTIC,
+          checkMove(getPosition(), getPlainDirection()) ? 1 : 0);
+        // TODO: move to according action
+        // set the result of the raycasting: the enemy's type
+        network.setInput(NeuronName.VISUAL_TYPE,
+          lastEnemySpottedType == Visual.PLAYER ? -1 / getEnemyTimeFactor() :
+          lastEnemySpottedType == Visual.ROBOT  ?  1 / getEnemyTimeFactor() : 0);
+        // and the enemy's position
+        if (lastEnemySpottedType != Visual.WALL)
+          network.setInput(NeuronName.VISUAL_POSITION,
+            scalarProductFromPosition(lastEnemySpottedPosition) / getEnemyTimeFactor());
+        // set the amount of energy which the robot has
+        network.setInput(NeuronName.ENERGY, (float) energy / (float) ENERGY_START);
         break;
       case LOOK_FOR_OPPONENTS:
         if (energy > ENERGY_SHOOT * 1.5f)
