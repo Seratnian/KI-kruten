@@ -1,4 +1,4 @@
-/** //<>// //<>//
+/** //<>//
  * Simulation for a 3D first person shooter
  *
  * @author sschleie@hs-mittweida.de
