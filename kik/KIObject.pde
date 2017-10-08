@@ -9,6 +9,8 @@ class KIObject extends MoveableObject implements SeeingObject
   int lastTimeRegenerated;
   Strategy strategy;
   int preferredRotatedirection = randomSign();
+  int success = 0;
+  Network network;
   
   KIObject(PVector position, float scale, PVector rotations, PShape structure, float size, color plainColor, Strategy strategy)
   {
@@ -98,6 +100,11 @@ class KIObject extends MoveableObject implements SeeingObject
     }
     
     return super.update();
+  }
+  
+  JSONObject getNetworkJSON()
+  {
+    return network.getJSON();
   }
 }
 

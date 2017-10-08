@@ -10,7 +10,6 @@ class FlyingRobot extends KIObject implements ShootingObject
   private PVector lastEnemySpottedPosition;
   private Visual lastEnemySpottedType = Visual.WALL;
   private float lastEnemySpottedTime;
-  private Network network;
   
   FlyingRobot(PVector position, PVector rotations, color plainColor, Strategy strategy)
   {
@@ -38,9 +37,14 @@ class FlyingRobot extends KIObject implements ShootingObject
     if (energy < ENERGY_SHOOT)
       return;
     energy -= ENERGY_SHOOT;
-    message("shot. new energy level " + energy);
-    Projectile projectile = new Projectile(getWeaponPosition(), get3dDirection().add(0, shootingAngle, 0), createShape(SPHERE, .01 * LEVEL_UNIT), .01 * LEVEL_UNIT, bulletColor, BULLET_SPEED);
+    Projectile projectile = new Projectile(this, getWeaponPosition(), get3dDirection().add(0, shootingAngle, 0), createShape(SPHERE, .01 * LEVEL_UNIT), .01 * LEVEL_UNIT, bulletColor, BULLET_SPEED);
     projectiles.add(projectile);
+  }
+  
+  void reportHit()
+  {
+    message("robot destroyed");
+    success += SUCCESS_FOR_DESTROYING;
   }
   
   PVector getWeaponPosition()
@@ -106,16 +110,21 @@ class FlyingRobot extends KIObject implements ShootingObject
         
         // check the outputs
         // move
+        //message("Neuron " + NeuronName.MOVE + ": " + network.getOutput(NeuronName.MOVE));
         if (checkMove(getPosition(), getPlainDirection()))
         {
-          movePlain(getMoveDirectionPlain().mult(network.getOutput(NeuronName.MOVE)));
+          movePlain(getMoveDirectionPlain().mult(speed * network.getOutput(NeuronName.MOVE)));
         }
         // rotate
+        //message("Neuron " + NeuronName.ROTATE + ": " + network.getOutput(NeuronName.ROTATE));
         rotatePlain(maxAnglePerSecond / frameRate * shiftToPossibleNegativity(network.getOutput(NeuronName.ROTATE)));
         // adjust weapon
+        //message("Neuron " + NeuronName.ADJUST + ": " + network.getOutput(NeuronName.ADJUST));
         shootingAngle += SHOOTING_ANGLE_DEFAULT * shiftToPossibleNegativity(network.getOutput(NeuronName.ADJUST));
         // look
+        //message("Neuron " + NeuronName.LOOK + ": " + network.getOutput(NeuronName.LOOK));
         float lookOutput = shiftToPossibleNegativity(network.getOutput(NeuronName.LOOK));
+        //message("Neuron " + NeuronName.LOOK + ": " + lookOutput);
         if (lookOutput > 0)
         {
           LookDirection lookDirection = LookDirection.FORWARD;
@@ -128,6 +137,7 @@ class FlyingRobot extends KIObject implements ShootingObject
                 else if (lookOutput > LOOK_DIRECTION_RANGE)
                   lookDirection = LookDirection.FORWARD_45;
           HashMap<PVector, Visual> visuals = performLooks(get3dDirection().add(0, shootingAngle, 0), lookDirection);
+          success += SUCCESS_FOR_LOOKING;
           
           for (PVector enemyPosition : visuals.keySet())
           {
@@ -138,9 +148,11 @@ class FlyingRobot extends KIObject implements ShootingObject
           }
         }
         // shoot
+        //message("Neuron " + NeuronName.SHOOT + ": " + network.getOutput(NeuronName.SHOOT));
         if (network.getOutput(NeuronName.SHOOT) > .5f)
         {
           shoot();
+          success += SUCCESS_FOR_SHOOTING;
         }
         
         // set inputs

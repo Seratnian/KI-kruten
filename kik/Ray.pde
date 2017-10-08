@@ -28,7 +28,8 @@ class Ray extends MoveableObject
           return;
         }
       }
-      if (checkCollision(player))
+      // ignore the player in training mode
+      if (level != Level.TRAIN_NEW && level != Level.TRAIN_EXISTING && checkCollision(player))
       {
         out.put(player.getPosition().copy(), Visual.PLAYER);
         end = getPosition().copy();

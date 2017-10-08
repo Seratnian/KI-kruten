@@ -1,4 +1,4 @@
-/** //<>// //<>//
+/** //<>//
  * Simulation for a 3D first person shooter
  *
  * @author sschleie@hs-mittweida.de
@@ -8,12 +8,22 @@ import java.awt.Robot;
 import java.awt.AWTException;
 
 final boolean debugMode = false;
+static Level level = Level.TRAIN_EXISTING;
+final int SUCCESS_NEEDED = 100;
 
-final int LEVEL_SIZE = 39;
-final int LEVEL_SIZE_HALF = LEVEL_SIZE/2;
-final int LEVEL_UNIT = 250;
-final int LEVEL_WIDTH = LEVEL_SIZE * LEVEL_UNIT;
-final int LEVEL_HEIGHT = LEVEL_UNIT * 4;
+final String NETWORK_JSON = "networks.json";
+final String NETWORK_EXISTING_JSON = "networks_to_train.json";
+static int LEVEL_SIZE;
+static int LEVEL_SIZE_HALF;
+static int LEVEL_WIDTH;
+static int LEVEL_UNIT = 250;
+static int LEVEL_HEIGHT = LEVEL_UNIT * 4;
+static int TIME_TO_PLAY;
+final int SUCCESS_FOR_LOOKING = 2;
+final int SUCCESS_FOR_SHOOTING = 5;
+final int SUCCESS_FOR_DESTROYING = 100;
+final int SUCCESS_FOR_WINNING = 500;
+
 final int LINE_HEIGHT = 20;
 final String MODELS = "models/";
 final String TEXTURES = "textures/";
@@ -23,6 +33,9 @@ final int BG_COLOR = #111133;
 int wHalf, hHalf;
 int currentLine = 2;
 int messages_destroyed = 0;
+int startTime;
+JSONArray jsonNetworks = new JSONArray();
+JSONArray jsonRemainingNetworks;
 
 // loading data
 Data data;
@@ -39,7 +52,7 @@ ArrayList<Ray> rays = new ArrayList();
 
 final Camera camera = new Camera();
 
-final Player player = new Player(new PVector(), 1, new PVector());
+final Player player = new Player(new PVector(), 1, new PVector(PI, 0, 0));
 
 Robot robot;
 
@@ -61,10 +74,27 @@ void setup()
   }
   robot.mouseMove(wHalf, hHalf);
 
+  if (level == Level.TRAIN_EXISTING)
+  {
+    jsonRemainingNetworks = loadJSONArray(NETWORK_EXISTING_JSON);
+    println (jsonRemainingNetworks.size() + "");
+    if (jsonRemainingNetworks.size() < 4)
+    {
+      println("there are too few networks to train with.");
+      exit();
+      return;
+    }
+    for (int i = 0; i < 4; i++)
+    {
+      jsonNetworks.append( (JSONObject) jsonRemainingNetworks.remove(0));
+    }
+  }
   data = new Data();
   environment = data.getEnvironment();
   ui = data.getUi();
   enemies = data.getEnemies();
+  
+  startTime = millis();
 }
 
 void draw()
@@ -73,8 +103,12 @@ void draw()
   background(BG_COLOR);
   lights();
   textureWrap(REPEAT);
-  // update game logic
-  update();
+
+  if (millis() - startTime > TIME_TO_PLAY * 1000)
+  {
+    endGame();
+  }
+  player.update();
 
   // Recalculate Rotation
   // get current mouse position relative to middle of screen
@@ -87,13 +121,12 @@ void draw()
   if (focused)
     robot.mouseMove(wHalf, hHalf);
 
-
   camera(camera.getEyeX(), camera.getEyeY(), camera.getEyeZ(), 
     camera.getCenterX(), camera.getCenterY(), camera.getCenterZ(), 
     camera.getUpX(), camera.getUpY(), camera.getUpZ());
 
   shape(environment);
-  
+
   for (int i = enemies.size() - 1; i >= 0; i--)
   {
     MoveableObject mo = enemies.get(i);
@@ -135,11 +168,6 @@ void draw()
     uo.display();
   }
   hint(ENABLE_DEPTH_TEST);
-}
-
-void update()
-{
-  player.update();
 }
 
 int[] getCoordsFromPosition(PVector position)
@@ -210,6 +238,10 @@ void keyPressed()
     // take screenshot
     save("screenshots/screen_" + day() + "_" + hour() + "_" + minute() + "_" + second() + ".jpg");
     break;
+  case 'e':
+    // end game and save successful networks
+    endGame();
+    break;
   }
 }
 void keyReleased()
@@ -262,11 +294,31 @@ PVector rotateZ(PVector vector3d, float angle)
   return vector3d;
 }
 
-PVector getStartPosition()
+void endGame()
 {
-  return getStartPosition();
+  JSONArray networks = loadJSONArray(NETWORK_JSON);
+  for (MoveableObject mo : enemies)
+  {
+    try {
+      KIObject kio = (KIObject) mo;
+      if (enemies.size() == 0)
+        kio.success += SUCCESS_FOR_WINNING;
+      message (kio.success + "");
+      if (kio.strategy == Strategy.NEURAL_NETWORK && kio.success >= SUCCESS_NEEDED)
+      {
+        JSONObject network = kio.getNetworkJSON();
+        networks.append(network);
+      }
+    }
+    catch (Exception e) {
+    }
+  }
+  saveJSONArray(networks, "data/" + NETWORK_JSON);
+  if (level == Level.TRAIN_EXISTING)
+    saveJSONArray(jsonRemainingNetworks, "data/" + NETWORK_EXISTING_JSON);
+  exit();
 }
-PVector getStartPosition(int index)
+enum Level
 {
-  return new PVector();
+  GAME, TRAIN_NEW, TRAIN_EXISTING
 }

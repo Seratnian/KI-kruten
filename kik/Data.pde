@@ -10,35 +10,17 @@ class Data
   private PImage crosshair = loadImage(IMAGES + "crosshair.png");
   private PImage pistol = loadImage(IMAGES + "pistol.png");
   
-  // The unlively part of the game
+  // The common parts of all levels
   PShape environment = createShape(GROUP);
   PShape getEnvironment() { return environment; }
   
   PImage wall = loadImage(TEXTURES + "wall.jpg");
   PImage floor = loadImage(TEXTURES + "floor.jpg");
   PImage ceiling = loadImage(TEXTURES + "ceiling.jpg");
-  private final boolean[][] walls = {
-    //  0      1      2       3      4      5     6      7       8      9     10     11     12     13     14     15    16      17     18     19
-    { false, false, false, false, false, false, true, false, false, true, false, false, false, true, false, false, false, false, false, true  }, // 0
-    { false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, true  }, // 1
-    { false, false, true, true, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, true  }, // 2
-    { false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false }, // 3
-    { false, false, false, false, false, false, false, false, false, false, false, true, true, true, false, false, true, false, false, false }, // 4
-    { false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, true, false, false, false }, // 5
-    { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, true  }, // 6
-    { false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false, true  }, // 7
-    { false, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, false, true, true, true  }, // 8
-    { true, true, true, false, false, true, false, false, false, false, true, false, false, false, false, false, false, false, false, false }, // 9
-    { false, false, false, false, false, false, false, false, true, true, true, false, false, true, true, true, true, false, false, false }, // 10
-    { false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false }, // 11
-    { false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true  }, // 12
-    { true, false, false, false, true, false, false, true, false, false, true, false, false, true, true, false, false, false, false, true  }, // 13
-    { false, false, false, false, false, false, false, false, false, false, true, false, false, true, false, false, false, true, false, true  }, // 14
-    { false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false }, // 15
-    { false, false, true, true, true, true, true, false, false, false, true, false, false, false, false, false, false, false, false, false }, // 16
-    { false, false, false, false, false, false, false, false, true, false, false, false, false, false, true, true, false, false, false, true  }, // 17
-    { false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false }  // 18
-  };                                                                                                                                        //m
+  
+  
+  // the gaming level
+  private final boolean[][] walls;
 
   // enemies
   private final ArrayList<MoveableObject> enemies = new ArrayList<MoveableObject>();
@@ -50,6 +32,50 @@ class Data
 
   Data()
   {
+    switch (level)
+    {
+      default:
+      case GAME:
+        LEVEL_SIZE = 39;
+        TIME_TO_PLAY = Integer.MAX_VALUE;
+        
+        walls = new boolean[][] {
+          //  0      1      2       3      4      5     6      7       8      9     10     11     12     13     14     15    16      17     18     19
+          { false, false, false, false, false, false, true, false, false, true, false, false, false, true, false, false, false, false, false, true  }, // 0
+          { false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, true  }, // 1
+          { false, false, true, true, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, true  }, // 2
+          { false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false }, // 3
+          { false, false, false, false, false, false, false, false, false, false, false, true, true, true, false, false, true, false, false, false }, // 4
+          { false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, true, false, false, false }, // 5
+          { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, true  }, // 6
+          { false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false, true  }, // 7
+          { false, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, false, true, true, true  }, // 8
+          { true, true, true, false, false, true, false, false, false, false, true, false, false, false, false, false, false, false, false, false }, // 9
+          { false, false, false, false, false, false, false, false, true, true, true, false, false, true, true, true, true, false, false, false }, // 10
+          { false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false }, // 11
+          { false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true  }, // 12
+          { true, false, false, false, true, false, false, true, false, false, true, false, false, true, true, false, false, false, false, true  }, // 13
+          { false, false, false, false, false, false, false, false, false, false, true, false, false, true, false, false, false, true, false, true  }, // 14
+          { false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false }, // 15
+          { false, false, true, true, true, true, true, false, false, false, true, false, false, false, false, false, false, false, false, false }, // 16
+          { false, false, false, false, false, false, false, false, true, false, false, false, false, false, true, true, false, false, false, true  }, // 17
+          { false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false }  // 18
+        };
+        break;
+      case TRAIN_EXISTING:
+      case TRAIN_NEW:
+        LEVEL_SIZE = 7;
+        TIME_TO_PLAY = 60;
+        
+        walls = new boolean[][] {
+          { false, false, false, false },
+          { false, false, false, true },
+          { false, false, false, false }
+        };
+    }
+    LEVEL_SIZE_HALF = LEVEL_SIZE/2;
+    LEVEL_WIDTH = LEVEL_SIZE * LEVEL_UNIT;
+    
     //insert the border objects
     environment.addChild(new SteadyObject(new PVector(), 1, new PVector(), createShape(BOX, LEVEL_WIDTH, 1, LEVEL_WIDTH), floor).getStructure()); //floor
     environment.addChild(new SteadyObject(new PVector(LEVEL_WIDTH/2, LEVEL_HEIGHT/2, 0), 1, new PVector(), createShape(BOX, 1, LEVEL_HEIGHT, LEVEL_WIDTH), wall).getStructure()); //wall 1
@@ -81,28 +107,43 @@ class Data
     // add start positions
     int distance = LEVEL_SIZE_HALF * LEVEL_UNIT;
     
-    //startPositions.add(new PVector(distance, 0, distance));
-    //startPositions.add(new PVector(-distance, 0, distance));
-    //startPositions.add(new PVector(distance, 0, -distance));
-    //startPositions.add(new PVector(-distance, 0, -distance));
+    startPositions.add(new PVector(distance, 0, distance));
+    startPositions.add(new PVector(-distance, 0, distance));
+    startPositions.add(new PVector(distance, 0, -distance));
+    startPositions.add(new PVector(-distance, 0, -distance));
     
-    startPositions.add(new PVector(LEVEL_UNIT/2, 0, LEVEL_UNIT/2));
-    startPositions.add(new PVector(-LEVEL_UNIT/2, 0, LEVEL_UNIT/2));
-    startPositions.add(new PVector(LEVEL_UNIT/2, 0, -LEVEL_UNIT/2));
-    startPositions.add(new PVector(-LEVEL_UNIT/2, 0, -LEVEL_UNIT/2));
+    //startPositions.add(new PVector(LEVEL_UNIT/2, 0, LEVEL_UNIT/2));
+    //startPositions.add(new PVector(-LEVEL_UNIT/2, 0, LEVEL_UNIT/2));
+    //startPositions.add(new PVector(LEVEL_UNIT/2, 0, -LEVEL_UNIT/2));
+    //startPositions.add(new PVector(-LEVEL_UNIT/2, 0, -LEVEL_UNIT/2));
     
     Collections.shuffle(startPositions);
     
     // add enemies
-    //enemies.add(new FlyingRobot(startPositions.get(1), new PVector(0, random(-PI, PI), 0), #996666, Strategy.LOOK_FOR_OPPONENTS));
-    //enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, Strategy.LOOK_FOR_OPPONENTS));
-    //enemies.add(new FlyingRobot(startPositions.get(3), new PVector(0, random(-PI, PI), 0), #666699, Strategy.LOOK_FOR_OPPONENTS));
-    
-    enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, new Network(NetworkPrototype.RANDOM)));
+    switch (level)
+    {
+      case GAME:
+        enemies.add(new FlyingRobot(startPositions.get(1), new PVector(0, random(-PI, PI), 0), #996666, Strategy.LOOK_FOR_OPPONENTS));
+        enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #669966, Strategy.LOOK_FOR_OPPONENTS));
+        enemies.add(new FlyingRobot(startPositions.get(3), new PVector(0, random(-PI, PI), 0), #666699, Strategy.LOOK_FOR_OPPONENTS));                                                                                         //m
+        break;
+      case TRAIN_EXISTING:
+        enemies.add(new FlyingRobot(startPositions.get(0), new PVector(0, random(-PI, PI), 0), #996666, new Network(NetworkPrototype.RANDOM).setJSON(jsonNetworks.getJSONObject(0))));
+        enemies.add(new FlyingRobot(startPositions.get(1), new PVector(0, random(-PI, PI), 0), #669966, new Network(NetworkPrototype.RANDOM).setJSON(jsonNetworks.getJSONObject(1))));
+        enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #666699, new Network(NetworkPrototype.RANDOM).setJSON(jsonNetworks.getJSONObject(2))));
+        enemies.add(new FlyingRobot(startPositions.get(3), new PVector(0, random(-PI, PI), 0), #669999, new Network(NetworkPrototype.RANDOM).setJSON(jsonNetworks.getJSONObject(3))));
+        break;
+      case TRAIN_NEW:
+        enemies.add(new FlyingRobot(startPositions.get(0), new PVector(0, random(-PI, PI), 0), #996666, new Network(NetworkPrototype.RANDOM)));
+        enemies.add(new FlyingRobot(startPositions.get(1), new PVector(0, random(-PI, PI), 0), #669966, new Network(NetworkPrototype.RANDOM)));
+        enemies.add(new FlyingRobot(startPositions.get(2), new PVector(0, random(-PI, PI), 0), #666699, new Network(NetworkPrototype.RANDOM)));
+        enemies.add(new FlyingRobot(startPositions.get(3), new PVector(0, random(-PI, PI), 0), #669999, new Network(NetworkPrototype.RANDOM)));
+        break;
+    }
     
     // set player's start position
     PVector position = player.getPosition();
-    position.set(startPositions.get(0).x, position.y, startPositions.get(0).z);
+    position.set(0, position.y, 0);
   }
 
   boolean[][] getWalls()

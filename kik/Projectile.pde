@@ -2,11 +2,13 @@ class Projectile extends MoveableObject
 {
   boolean shouldBeDestroyed = false;
   int damage = 1;
+  ShootingObject owner;
 
-  Projectile(PVector position, PVector rotations, PShape structure, float size, color plainColor, float speed)
+  Projectile(ShootingObject owner, PVector position, PVector rotations, PShape structure, float size, color plainColor, float speed)
   {
     super(position, 1, rotations, structure, size, plainColor);
     this.speed = speed;
+    this.owner = owner;
   }
 
   boolean update()
@@ -27,6 +29,7 @@ class Projectile extends MoveableObject
         if (checkCollision(mo))
         {
           mo.doDamage(damage);
+          owner.reportHit();
           shouldBeDestroyed = true;
         }
       }

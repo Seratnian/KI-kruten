@@ -4,6 +4,7 @@ class Network
   HashMap<NeuronName, Neuron> hiddenNeurons = new HashMap();
   HashMap<NeuronName, Neuron> outputNeurons = new HashMap();
   HashMap[] neurons = { inputNeurons, hiddenNeurons, outputNeurons };
+  NetworkPrototype prototype;
   
   public float getOutput(NeuronName name)
   {
@@ -28,6 +29,8 @@ class Network
   
   Network (NetworkPrototype prototype)
   {
+    this.prototype = prototype;
+    
     NeuronName[] inputNeuronNames, hiddenNeuronNames, outputNeuronNames;
     switch (prototype)
     {
@@ -93,6 +96,62 @@ class Network
         }
       }
     }
+  }
+  
+  JSONObject getJSON()
+  {
+    JSONObject jsonNetwork = new JSONObject();
+    jsonNetwork.setString("prototype", prototype.name());
+    JSONArray jsonNeurons = new JSONArray();
+    jsonNetwork.setJSONArray("neurons", jsonNeurons);
+    for (HashMap<NeuronName, Neuron> neuronMap : neurons)
+    {
+      for (Neuron neuron : neuronMap.values())
+      {
+        JSONObject jsonNeuron = new JSONObject();
+        jsonNeuron.setFloat("threshold", neuron.threshold);
+        JSONArray jsonWeights = new JSONArray();
+        jsonNeuron.setJSONArray("weights", jsonWeights);
+        for (Link link : neuron.inputLinks)
+        {
+          jsonWeights.append(link.weight);
+        }
+        jsonNeurons.append(jsonNeuron);
+      }
+    }
+    return jsonNetwork;
+  }
+  
+  Network setJSON(JSONObject jsonNetwork)
+  {
+    //println(jsonNetwork);
+    String prototypeName = jsonNetwork.getString("prototype");
+    for (NetworkPrototype possiblePrototype : NetworkPrototype.values())
+    {
+      if (prototypeName.equals(possiblePrototype.name()))
+      {
+        prototype = possiblePrototype;
+        break;
+      }
+    }
+    
+    JSONArray jsonNeurons = jsonNetwork.getJSONArray("neurons");
+    for (HashMap<NeuronName, Neuron> neuronMap : neurons)
+    {
+      for (Neuron neuron : neuronMap.values())
+      {
+        JSONObject jsonNeuron = (JSONObject) jsonNeurons.remove(0);
+        neuron.threshold = jsonNeuron.getFloat("threshold");
+        JSONArray jsonWeights = jsonNeuron.getJSONArray("weights");
+        for (Link link : neuron.inputLinks)
+        {
+          link.weight = jsonWeights.getFloat(0);
+          jsonWeights.remove(0);
+        }
+      }
+    }
+    //println(this.getJSON());
+    return this;
   }
 }
 

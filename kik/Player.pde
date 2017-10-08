@@ -38,7 +38,8 @@ class Player extends MoveableObject implements ShootingObject
   
   void performShot()
   {
-    Projectile projectile = new Projectile(getWeaponPosition(), getRotations(), createShape(SPHERE, .01 * LEVEL_UNIT), .01 * LEVEL_UNIT, BULLET_COLOR, BULLET_SPEED);
+    Projectile projectile = new Projectile(this, getWeaponPosition(), getRotations(), createShape(SPHERE, .01 * LEVEL_UNIT), .01 * LEVEL_UNIT, BULLET_COLOR, BULLET_SPEED);
     projectiles.add(projectile);
   }
+  void reportHit() { }
 }

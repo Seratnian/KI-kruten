@@ -1,7 +1,7 @@
 class Camera
 {
   private final PVector eye = new PVector(0, LEVEL_UNIT, 0);
-  private final PVector center = new PVector(0, 0, 1);
+  private final PVector center = new PVector(0, 0, LEVEL_UNIT);
   private final PVector up = new PVector(0, -1, 0);
   
   static final int EYEX = 0;
